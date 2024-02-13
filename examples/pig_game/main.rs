@@ -1,10 +1,7 @@
 use std::time::Duration;
 
-use bevy::{
-    asset::ChangeWatcher, input::common_conditions::input_toggle_active, prelude::*,
-    render::camera::ScalingMode, ecs::entity,
-};
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy::{asset::ChangeWatcher, prelude::*, render::camera::ScalingMode};
+//use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use pig::PigPlugin;
 use prefab::DefaultPrefabsPlugin;
 use room::RoomPlugin;
@@ -43,7 +40,7 @@ fn main() {
                     ..default()
                 }),
             PigPlugin,
-            WorldInspectorPlugin::default().run_if(input_toggle_active(false, KeyCode::F3)),
+            //WorldInspectorPlugin::default().run_if(input_toggle_active(false, KeyCode::F3)),
             GameUiPlugin,
             RoomPlugin,
             DefaultPrefabsPlugin,
@@ -54,10 +51,7 @@ fn main() {
         .run();
 }
 
-fn setup(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>
-) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     debug!("set up");
     let mut camera = Camera2dBundle::default();
 
