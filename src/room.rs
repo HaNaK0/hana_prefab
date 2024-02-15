@@ -7,6 +7,7 @@ use bevy::{
 };
 use serde::{Deserialize, Serialize};
 
+/// The plugin that handles the loading and tracking of rooms and prefabs
 pub struct RoomPlugin;
 
 impl Plugin for RoomPlugin {
@@ -15,16 +16,18 @@ impl Plugin for RoomPlugin {
         app.init_resource::<PrefabRegistry>();
         app.init_resource::<RoomTracker>();
         app.add_asset_loader(RoomLoader);
-        app.add_systems(Update, parse_room_system);
+        app.add_systems(Update, room_system);
     }
 }
 
+/// A struct that contains an ammount of prefabs, each room is defined in a ron file
 #[derive(Deserialize, TypePath, TypeUuid, Debug)]
 #[uuid = "23c6bd8f-a194-43f3-93be-9a3f95354c7f"]
 pub struct Room {
     prefabs: HashMap<String, PrefabData>,
 }
 
+/// A struct containing the data of a single prefab field
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PrefabData {
     #[serde(rename = "type")]
@@ -59,6 +62,7 @@ impl PrefabData {
     }
 }
 
+/// An enum used for determining type of a field.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum PrefabField {
     String(String),
@@ -66,7 +70,9 @@ pub enum PrefabField {
     Bool(bool),
 }
 
+/// All prefabs that should be loaded from a room needs to imlpement the prefab trait.
 pub trait Prefab {
+    /// The method that is called when a prefab is loaded for the first time and needs to be spawned into the world
     fn spawn_prfab(
         &self,
         fields: &HashMap<String, PrefabField>,
@@ -74,6 +80,7 @@ pub trait Prefab {
         asset_server: &AssetServer,
     );
 
+    /// The method that is called when a prefab was changed in the ron file
     fn update_prfab(
         &self,
         changed_fields: &HashMap<String, PrefabField>,
@@ -82,7 +89,7 @@ pub trait Prefab {
     );
 }
 
-/// The assetloader
+/// The assetloader for the room asset
 #[derive(Default)]
 pub struct RoomLoader;
 
@@ -112,8 +119,8 @@ struct RoomTracker {
     rooms: HashMap<Handle<Room>, HashMap<String, (Entity, PrefabData)>>,
 }
 
-/// Checks wether a room asset has been loaded and the parses that room asset and spawns the prefab it has
-fn parse_room_system(
+/// Tracks rooms and whenever changes happens to a room
+fn room_system(
     mut asset_events: EventReader<AssetEvent<Room>>,
     mut commands: Commands,
     registry: Res<PrefabRegistry>,
@@ -209,7 +216,7 @@ pub struct PrefabRegistry {
 }
 
 impl PrefabRegistry {
-    /// Register a prefab to the registry
+    /// Register a prefab to the registry, all prefabs that are going to be loaded needs to be registered before loading.
     pub fn register_prefab(&mut self, name: &str, prefab: impl Prefab + Sync + Send + 'static) {
         self.prefabs.insert(name.to_string(), Box::new(prefab));
     }
