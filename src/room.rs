@@ -145,31 +145,35 @@ fn parse_room_system(
 
                 let room = room_assets.get(handle).unwrap();
 
-                let entities: HashMap<String, (Entity, PrefabData)> = room.prefabs.iter().map(|(id, new_prefab)| {
-                    match room_tracker.rooms[handle].get(id) {
-                        Some((entity, old_prefab)) => {
-                            let changed_fields =
-                                PrefabData::get_changed_fields(old_prefab, new_prefab);
+                let entities: HashMap<String, (Entity, PrefabData)> = room
+                    .prefabs
+                    .iter()
+                    .map(
+                        |(id, new_prefab)| match room_tracker.rooms[handle].get(id) {
+                            Some((entity, old_prefab)) => {
+                                let changed_fields =
+                                    PrefabData::get_changed_fields(old_prefab, new_prefab);
 
-                            registry.update(
-                                &new_prefab.prefab_type,
-                                changed_fields,
-                                commands.entity(entity.clone()),
-                                &asset_server,
-                            );
+                                registry.update(
+                                    &new_prefab.prefab_type,
+                                    changed_fields,
+                                    commands.entity(entity.clone()),
+                                    &asset_server,
+                                );
 
-                            (id.clone(), (entity.clone(), new_prefab.clone()))
-                        }
-                        None => {
-                            let commands = commands.spawn_empty();
-                            let entity = commands.id();
-                            registry.spawn(new_prefab, commands, &asset_server);
-                            (id.clone(), (entity, new_prefab.clone()))
+                                (id.clone(), (entity.clone(), new_prefab.clone()))
+                            }
+                            None => {
+                                let commands = commands.spawn_empty();
+                                let entity = commands.id();
+                                registry.spawn(new_prefab, commands, &asset_server);
+                                (id.clone(), (entity, new_prefab.clone()))
+                            }
                         },
-                    }
-                }).collect();
+                    )
+                    .collect();
 
-                let room_keys : HashSet<&String> = room_tracker.rooms[handle].keys().collect();
+                let room_keys: HashSet<&String> = room_tracker.rooms[handle].keys().collect();
                 let new_room_keys = entities.keys().collect();
 
                 let diff = room_keys.difference(&new_room_keys);

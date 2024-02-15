@@ -4,14 +4,12 @@ use bevy::{asset::ChangeWatcher, prelude::*, render::camera::ScalingMode};
 //use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use pig::PigPlugin;
 use prefab::DefaultPrefabsPlugin;
-use room::RoomPlugin;
 use ui::GameUiPlugin;
 
-use crate::room::Room;
+use hana_prefab::room::{Room, RoomPlugin};
 
 mod pig;
 mod prefab;
-mod room;
 mod ui;
 
 #[derive(Component)]

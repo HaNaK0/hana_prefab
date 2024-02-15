@@ -1,6 +1,6 @@
 use bevy::{ecs::system::EntityCommands, prelude::*, utils::HashMap};
 
-use crate::room::{Prefab, PrefabField, PrefabRegistry};
+use hana_prefab::room::{Prefab, PrefabField, PrefabRegistry};
 
 pub struct DefaultPrefabsPlugin;
 
