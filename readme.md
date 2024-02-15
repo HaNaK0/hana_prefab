@@ -8,7 +8,7 @@ Hana prefab is a plugin for bevy that allows you to store level and other data i
 A prefab is predefined game object or resource that can be loaded from a ron file. The way this is done by an interface from the varibles declared in the ron file and compnents and entities in game. 
 
 ### Room
-A room is a collection of prefabs and resources declared in a ron file. 
+A room is a collection of prefabs and resources declared in a [ron](https://github.com/ron-rs/ron) file. 
 
 ```rust
 (
@@ -28,4 +28,13 @@ A room is a collection of prefabs and resources declared in a ron file.
        )
     }
 )
+```
+The room file is made of a root object with a filed called `prefabs` which is a map type. The prefabs map contains prefab objects which has two fields, `type` and `fields`. Type declares which prefab type the object is and fileds contains the fields of the prefab.
+The fields are of a enum type with the following variants
+```rust
+pub enum PrefabField {
+    String(String),
+    Number(f64),
+    Bool(bool),
+}
 ```
