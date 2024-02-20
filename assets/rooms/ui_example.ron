@@ -1,0 +1,29 @@
+(
+    resources: {
+        "ui_atlas" : (
+            type: "SpriteAtlas"
+            fields: {
+                "image" : String("sprite/ui/background.ong")
+                "generate_grid" : Bool(true),
+                "tile_size" : Vec2(32.0, 32.0),
+                "columns" : Number(3),
+                "rows" : Number(3),
+                "padding": None,
+                "offset": None,
+            }
+        )
+    }
+    prefabs: {
+        "main_widget": (
+            type: "ui_widget",
+            fields: {
+                "background_atlas" : String("ui_atlas"),
+                "position" : Vec2(0.5, 0.5),
+                "size" : Vec2(0.2, 0.2),
+                "anchor" : String("center"),
+            } 
+        )
+    }
+)
+
+grupp 
