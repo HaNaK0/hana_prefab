@@ -1,28 +1,28 @@
 use bevy::{
-    asset::{AssetLoader, LoadedAsset},
+    asset::{AssetLoader, AsyncReadExt},
     ecs::system::EntityCommands,
     prelude::*,
-    reflect::{TypePath, TypeUuid},
+    reflect::TypePath,
     utils::{HashMap, HashSet},
 };
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 /// The plugin that handles the loading and tracking of rooms and prefabs
 pub struct RoomPlugin;
 
 impl Plugin for RoomPlugin {
     fn build(&self, app: &mut App) {
-        app.add_asset::<Room>();
+        app.init_asset::<Room>();
         app.init_resource::<PrefabRegistry>();
         app.init_resource::<RoomTracker>();
-        app.add_asset_loader(RoomLoader);
+        app.init_asset_loader::<RoomLoader>();
         app.add_systems(Update, room_system);
     }
 }
 
 /// A struct that contains an ammount of prefabs, each room is defined in a ron file
-#[derive(Deserialize, TypePath, TypeUuid, Debug)]
-#[uuid = "23c6bd8f-a194-43f3-93be-9a3f95354c7f"]
+#[derive(Deserialize, TypePath, Asset, Debug)]
 pub struct Room {
     prefabs: HashMap<String, PrefabData>,
 }
@@ -96,30 +96,44 @@ pub trait Prefab {
 #[derive(Default)]
 pub struct RoomLoader;
 
-impl AssetLoader for RoomLoader {
-    fn load<'a>(
-        &'a self,
-        bytes: &'a [u8],
-        load_context: &'a mut bevy::asset::LoadContext,
-    ) -> bevy::utils::BoxedFuture<'a, Result<(), bevy::asset::Error>> {
-        Box::pin(async move {
-            debug!("Loading room at {:?}", load_context.path());
-            let room = ron::de::from_bytes::<Room>(bytes)?;
-            load_context.set_default_asset(LoadedAsset::new(room));
+#[derive(Error, Debug)]
+pub enum RoomLoaderError {
+    /// An [IO](std::io) Error
+    #[error("Could not load asset: {0}")]
+    Io(#[from] std::io::Error),
+    /// A [RON](ron) Error
+    #[error("Could not parse RON: {0}")]
+    RonSpannedError(#[from] ron::error::SpannedError),
+}
 
-            Ok(())
-        })
-    }
+impl AssetLoader for RoomLoader {
+    type Asset = Room;
+    type Settings = ();
+    type Error = RoomLoaderError;
 
     fn extensions(&self) -> &[&str] {
         &["ron", "room"]
+    }
+
+    fn load<'a>(
+        &'a self,
+        reader: &'a mut bevy::asset::io::Reader,
+        _settings: &'a Self::Settings,
+        _load_context: &'a mut bevy::asset::LoadContext,
+    ) -> bevy::utils::BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
+        Box::pin(async move {
+            let mut bytes = Vec::new();
+            reader.read_to_end(&mut bytes).await?;
+            let room = ron::de::from_bytes::<Room>(&bytes)?;
+            Ok(room)
+        })
     }
 }
 
 /// Tracks which rooms are currently being loaded.
 #[derive(Resource, Default)]
 struct RoomTracker {
-    rooms: HashMap<Handle<Room>, HashMap<String, (Entity, PrefabData)>>,
+    rooms: HashMap<AssetId<Room>, HashMap<String, (Entity, PrefabData)>>,
 }
 
 /// Tracks rooms and whenever changes happens to a room
@@ -131,11 +145,11 @@ fn room_system(
     room_assets: Res<Assets<Room>>,
     asset_server: Res<AssetServer>,
 ) {
-    for event in asset_events.iter() {
+    for event in asset_events.read() {
         match event {
-            AssetEvent::Created { handle } => {
+            AssetEvent::Added { id: handle } => {
                 debug!("Room loaded parsing room. Room:{:?}", handle);
-                let room = room_assets.get(handle).unwrap();
+                let room = room_assets.get(*handle).unwrap();
 
                 let entities = room
                     .prefabs
@@ -148,18 +162,18 @@ fn room_system(
                     })
                     .collect();
 
-                room_tracker.rooms.insert(handle.clone_weak(), entities);
+                room_tracker.rooms.insert(handle.clone(), entities);
             }
-            AssetEvent::Modified { handle } => {
-                debug!("Room modified, reparsing room. Room:{:?}", handle);
+            AssetEvent::Modified { id } => {
+                debug!("Room modified, reparsing room. Room:{:?}", id);
 
-                let room = room_assets.get(handle).unwrap();
+                let room = room_assets.get(*id).unwrap();
 
                 let entities: HashMap<String, (Entity, PrefabData)> = room
                     .prefabs
                     .iter()
                     .map(
-                        |(id, new_prefab)| match room_tracker.rooms[handle].get(id) {
+                        |(prefab_id, new_prefab)| match room_tracker.rooms[id].get(prefab_id) {
                             Some((entity, old_prefab)) => {
                                 let changed_fields =
                                     PrefabData::get_changed_fields(old_prefab, new_prefab);
@@ -171,25 +185,25 @@ fn room_system(
                                     &asset_server,
                                 );
 
-                                (id.clone(), (entity.clone(), new_prefab.clone()))
+                                (prefab_id.clone(), (entity.clone(), new_prefab.clone()))
                             }
                             None => {
                                 let commands = commands.spawn_empty();
                                 let entity = commands.id();
                                 registry.spawn(new_prefab, commands, &asset_server);
-                                (id.clone(), (entity, new_prefab.clone()))
+                                (prefab_id.clone(), (entity, new_prefab.clone()))
                             }
                         },
                     )
                     .collect();
 
-                let room_keys: HashSet<&String> = room_tracker.rooms[handle].keys().collect();
+                let room_keys: HashSet<&String> = room_tracker.rooms[id].keys().collect();
                 let new_room_keys = entities.keys().collect();
 
                 let diff = room_keys.difference(&new_room_keys);
 
                 let remove_count = diff
-                    .map(|key| room_tracker.rooms[handle][*key].0)
+                    .map(|key| room_tracker.rooms[id][*key].0)
                     .map(|entity| commands.entity(entity).despawn())
                     .count();
 
@@ -198,15 +212,26 @@ fn room_system(
                 drop(room_keys);
                 drop(new_room_keys);
 
-                room_tracker.rooms.insert(handle.clone_weak(), entities);
+                room_tracker.rooms.insert(id.clone(), entities);
             }
-            AssetEvent::Removed { handle } => {
-                debug!("Room with handle {handle:?} removed");
-                if let Some(entities) = room_tracker.rooms.remove(handle) {
+            AssetEvent::Unused { id } => {
+                debug!("Room with handle {id:?} is unused and will be despawned");
+                if let Some(entities) = room_tracker.rooms.remove(id) {
                     for (_, (entity, _)) in entities {
                         commands.entity(entity).despawn();
                     }
                 }
+            }
+            AssetEvent::Removed { id } => {
+                debug!("Room with id {id:?} removed");
+                if let Some(entities) = room_tracker.rooms.remove(id) {
+                    for (_, (entity, _)) in entities {
+                        commands.entity(entity).despawn();
+                    }
+                }
+            }
+            AssetEvent::LoadedWithDependencies { id } => {
+                debug!("Room {id:?} loaded with dependencies")
             }
         }
     }

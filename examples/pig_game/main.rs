@@ -1,6 +1,4 @@
-use std::time::Duration;
-
-use bevy::{asset::ChangeWatcher, prelude::*, render::camera::ScalingMode};
+use bevy::{prelude::*, render::camera::ScalingMode};
 //use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use pig::PigPlugin;
 use prefab::DefaultPrefabsPlugin;
@@ -23,20 +21,15 @@ struct Money(f32);
 fn main() {
     App::new()
         .add_plugins((
-            DefaultPlugins
-                .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        resolution: (640.0, 480.0).into(),
-                        resizable: true,
-                        title: "rustiant".to_string(),
-                        ..default()
-                    }),
-                    ..default()
-                })
-                .set(AssetPlugin {
-                    watch_for_changes: ChangeWatcher::with_delay(Duration::from_secs_f32(1.0)),
+            DefaultPlugins.set(WindowPlugin {
+                primary_window: Some(Window {
+                    resolution: (640.0, 480.0).into(),
+                    resizable: true,
+                    title: "rustiant".to_string(),
                     ..default()
                 }),
+                ..default()
+            }),
             PigPlugin,
             //WorldInspectorPlugin::default().run_if(input_toggle_active(false, KeyCode::F3)),
             GameUiPlugin,
@@ -66,31 +59,31 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 fn movement_system(
     mut players: Query<(&mut Transform, &Player)>,
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
 ) {
     for (mut transform, player) in &mut players {
-        if keyboard_input.pressed(KeyCode::A) {
+        if keyboard_input.pressed(KeyCode::KeyA) {
             transform.translation.x -= player.speed * time.delta_seconds();
         }
-        if keyboard_input.pressed(KeyCode::D) {
+        if keyboard_input.pressed(KeyCode::KeyD) {
             transform.translation.x += player.speed * time.delta_seconds();
         }
-        if keyboard_input.pressed(KeyCode::W) {
+        if keyboard_input.pressed(KeyCode::KeyW) {
             transform.translation.y += player.speed * time.delta_seconds();
         }
-        if keyboard_input.pressed(KeyCode::S) {
+        if keyboard_input.pressed(KeyCode::KeyS) {
             transform.translation.y -= player.speed * time.delta_seconds();
         }
     }
 }
 
 fn remove_rooms(
-    rooms: Query<(Entity, With<Handle<Room>>)>,
+    rooms: Query<(Entity, Has<Handle<Room>>)>,
     mut commands: Commands,
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
-    if keyboard_input.just_pressed(KeyCode::Q) {
+    if keyboard_input.just_pressed(KeyCode::KeyQ) {
         for (entity, _) in &rooms {
             if let Some(mut commands) = commands.get_entity(entity) {
                 info!("Despawned room entity{entity:?}");
