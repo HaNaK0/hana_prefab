@@ -25,7 +25,7 @@ fn spawn_pig_system(
     player: Query<&Transform, With<Player>>,
     pig_parent: Query<Entity, With<PigParent>>,
     asset_server: Res<AssetServer>,
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) || money.0 < 10.0 {
         return;
