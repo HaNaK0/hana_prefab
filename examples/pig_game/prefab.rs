@@ -40,7 +40,7 @@ impl Prefab for PlayerPrefab {
             warn!("Speed value har wrong type")
         }
 
-        if let (PrefabField::String(sprite), PrefabField::String(position)) = (
+        if let (PrefabField::String(sprite), PrefabField::Vec2(x, y)) = (
             fields
                 .get("sprite")
                 .as_ref()
@@ -50,14 +50,11 @@ impl Prefab for PlayerPrefab {
                 .as_ref()
                 .expect("No position field on player"),
         ) {
-            let position: (f32, f32) =
-                ron::de::from_str(position).expect("Failed parsing position");
-
             commands.insert(SpriteBundle {
                 texture: asset_server.load(sprite),
                 transform: Transform::from_translation(Vec3 {
-                    x: position.0,
-                    y: position.1,
+                    x: *x,
+                    y: *y,
                     z: 0.0,
                 }),
                 ..default()

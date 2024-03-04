@@ -66,8 +66,9 @@ impl PrefabData {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum PrefabField {
     String(String),
-    Number(f64),
+    Number(f32),
     Bool(bool),
+    Vec2(f32, f32)
 }
 
 /// All prefabs that should be loaded from a room needs to imlpement the prefab trait.

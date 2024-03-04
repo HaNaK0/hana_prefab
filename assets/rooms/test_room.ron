@@ -4,7 +4,7 @@
             type: "Player",
             fields: {
                 "sprite" : String("sprites/bevy-icon.png"),
-                "position" : String("(0, 0)"),
+                "position" : Vec2(0, 0),
                 "speed" : Number(300.0),
             }
         ),
