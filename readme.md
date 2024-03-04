@@ -33,8 +33,9 @@ The room file is made of a root object with a filed called `prefabs` which is a 
 The fields are of a enum type with the following variants
 ```rust
 pub enum PrefabField {
-    String(String),
-    Number(f64),
+    Vec2(f32)
+    Number(f32),
     Bool(bool),
+    String(String),
 }
 ```

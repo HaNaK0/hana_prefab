@@ -64,10 +64,12 @@ impl PrefabData {
 
 /// An enum used for determining type of a field.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(untagged)]
 pub enum PrefabField {
-    String(String),
-    Number(f64),
+    Number(f32),
     Bool(bool),
+    Vec2(f32, f32),
+    String(String),
 }
 
 /// All prefabs that should be loaded from a room needs to imlpement the prefab trait.
