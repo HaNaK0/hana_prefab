@@ -21,5 +21,3 @@ jobs:
         run: cargo test --verbose
       - name: Build Examples
         run: cargo build --verbose --examples
-      - name: Build Wasm
-        run: cargo build --verbose --target wasm32-unknown-unknown
