@@ -22,4 +22,4 @@ jobs:
       - name: Build Examples
         run: cargo build --verbose --examples
       - name: Build Wasm
-        run: cargo build --verbose --target wasm32-unkown-unknown
+        run: cargo build --verbose --target wasm32-unknown-unknown
