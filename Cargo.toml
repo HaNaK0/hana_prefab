@@ -6,6 +6,7 @@ description = "Hana prefab is a plugin for bevy that allows you to store level a
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/HaNaK0/hana_prefab"
 readme = "readme.md"
+exclude = ["assets/*", "examples/*", ".github/*"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
